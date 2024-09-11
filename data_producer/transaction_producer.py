@@ -1,16 +1,18 @@
+import time
+import random
 from kafka import KafkaProducer
 import json
-import time
 
 class TransactionProducer:
     def __init__(self, brokers, topic):
-        self.producer = KafkaProducer(bootstrap_servers=brokers,
-                                      value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+        self.producer = KafkaProducer(
+            bootstrap_servers=brokers,
+            value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        )
         self.topic = topic
 
     def produce_transactions(self):
         while True:
-            # Generate mock transaction data
             transaction = {
                 'timestamp': int(time.time()),
                 'amount': random.uniform(1, 1000),
@@ -25,7 +27,7 @@ class TransactionProducer:
             time.sleep(1)
 
 if __name__ == '__main__':
-    brokers = ['localhost:9092', 'localhost:9093']
+    brokers = ['broker:29092']
     topic = 'raw_transactions'
 
     producer = TransactionProducer(brokers, topic)
