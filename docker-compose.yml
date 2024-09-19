@@ -68,3 +68,87 @@ services:
     environment:
       - KAFKA_BROKERS=broker:29092
       - KAFKA_TOPIC=raw_transactions
+
+  spark-master:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark  # Use the custom Dockerfile
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8080:8080"  # Spark master web UI
+      - "7077:7077"  # Spark master port
+    volumes:
+      - ./data_processor:/opt/spark-apps  # Mount the directory containing fraud_detector.py
+
+  spark-worker-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark  # Use the custom Dockerfile
+    container_name: spark-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+    depends_on:
+      - spark-master
+    ports:
+      - "8081:8081"  # Spark worker web UI
+
+  spark-worker-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark  # Use the custom Dockerfile
+    container_name: spark-worker-2
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+    depends_on:
+      - spark-master
+      - spark-worker-1
+      - timescaledb
+      - producer
+    ports:
+      - "8082:8081"  # Spark worker web UI
+    volumes:
+      - ./data_processor:/opt/spark-apps
+    command: ["/bin/bash", "-c", "cd /opt/spark-apps/ && /opt/bitnami/spark/bin/spark-submit --master spark://spark-master:7077 --deploy-mode client --packages org.postgresql:postgresql:42.2.23,org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.2 fraud_detector.py"]
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    environment:
+      POSTGRES_DB: fraud_detection
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./monitoring/init.sql:/docker-entrypoint-initdb.d/init.sql  # Mount the SQL initialization file
+    restart: always
+
+  grafana:
+      image: grafana/grafana:11.2.0
+      container_name: grafana
+      ports:
+        - "3000:3000"
+      depends_on:
+        - timescaledb
+      volumes:
+        - grafana-storage:/var/lib/grafana
+  redis:
+    image: redis:7.4-alpine3.20
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+volumes:
+  grafana-storage:
