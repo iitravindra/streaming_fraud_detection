@@ -41,7 +41,8 @@ schema = StructType([
     StructField("transaction_amount", DoubleType(), True),
     StructField("transaction_time", TimestampType(), True),
     StructField("location", StringType(), True),
-    StructField("transaction_method", StringType(), True)
+    StructField("transaction_method", StringType(), True),
+    StructField("user_transactions_last_24h", IntegerType(), True),
 ])
 
 # Load pre-trained model (from scikit-learn)
@@ -111,7 +112,7 @@ joined_df = transaction_df.join(account_details_df, "account_id") \
 joined_df = joined_df.withColumn("transaction_hour", hour("transaction_time"))
 
 # modif and add later logic to calculate user_transactions_last_24h
-joined_df = joined_df.withColumn("user_transactions_last_24h", lit(0))
+#joined_df = joined_df.withColumn("user_transactions_last_24h", lit(0))
 
 joined_df = joined_df.withColumn("is_fraud", detect_fraud_udf(
     col("transaction_amount"),

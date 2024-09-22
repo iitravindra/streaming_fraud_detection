@@ -16,5 +16,14 @@ RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pyth
 # Copy the wait-for-it script
 COPY wait-for-it.sh /usr/local/bin/wait-for-it.sh
 
-# Run wait-for-it.sh to wait for the Kafka broker and then start the producer
-CMD ["wait-for-it.sh", "broker", "9092", "--", "python", "transaction_producer.py"]
+# Add an argument to specify the Python script
+ARG script=normal_transaction_producer.py
+
+# Set an environment variable for the script
+ENV SCRIPT_NAME=${script}
+
+# Ensure the wait-for-it script is executable
+RUN chmod +x /usr/local/bin/wait-for-it.sh
+
+# Use 'sh -c' to ensure the script argument is expanded
+CMD ["sh", "-c", "/usr/local/bin/wait-for-it.sh broker 9092 -- python /app/${SCRIPT_NAME}"]

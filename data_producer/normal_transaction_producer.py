@@ -42,7 +42,8 @@ class TransactionProducer:
             'transaction_amount': round(np.random.uniform(1, 1000), 2),  # Transaction amount between 1 and 1000
             'transaction_time': random_date(start_date, end_date).strftime('%Y-%m-%d %H:%M:%S'),  # Current datetime in a PostgreSQL-friendly format
             'location': random.choice(['USA', 'Canada', 'UK', 'Germany', 'France', 'India', 'China']),
-            'transaction_method': random.choice(['CreditCard', 'BankTransfer', 'PayPal', 'Cryptocurrency'])
+            'transaction_method': random.choice(['CreditCard', 'BankTransfer', 'PayPal', 'Cryptocurrency']),
+            'user_transactions_last_24h': np.random.randint(0, 4)  # Number of transactions made by the user in the last 24 hours;[]
             }
 
             # Send transaction data to Kafka topic
