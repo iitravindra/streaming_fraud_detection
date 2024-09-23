@@ -1,0 +1,22 @@
+# Use the existing Bitnami Spark image as the base
+FROM bitnami/spark:3.5.2
+
+# Install pip
+USER root
+RUN apt-get update && apt-get install -y python3-pip
+
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org pandas
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org scikit-learn
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org psycopg2-binary
+
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org numpy
+
+
+# Switch back to Spark user
+USER 1001

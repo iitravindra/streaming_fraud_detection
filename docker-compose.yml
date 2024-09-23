@@ -1,0 +1,164 @@
+version: '2'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+    image: confluentinc/cp-server:7.5.0
+    hostname: broker
+    container_name: broker
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: broker:29092
+      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+      CONFLUENT_METRICS_ENABLE: 'true'
+      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
+
+  control-center:
+    image: confluentinc/cp-enterprise-control-center:7.5.0
+    hostname: control-center
+    container_name: control-center
+    depends_on:
+      - broker
+    ports:
+      - "9021:9021"
+    environment:
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:29092'
+      CONTROL_CENTER_CONNECT_CONNECT-DEFAULT_CLUSTER: 'connect:8083'
+      CONTROL_CENTER_KSQL_KSQLDB1_URL: "http://ksqldb-server:8088"
+      CONTROL_CENTER_KSQL_KSQLDB1_ADVERTISED_URL: "http://localhost:8088"
+      CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      CONTROL_CENTER_REPLICATION_FACTOR: 1
+      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
+      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
+      PORT: 9021
+
+  producer:
+    build:
+      context: ./data_producer
+      args:
+        script: normal_transaction_producer.py
+    depends_on:
+      - zookeeper
+      - broker
+    environment:
+      - KAFKA_BROKERS=broker:29092
+      - KAFKA_TOPIC=raw_transactions
+
+  hacker-producer:
+    build:
+      context: ./data_producer
+      args:
+        script: hacker_transaction_producer.py
+    depends_on:
+      - zookeeper
+      - broker
+    environment:
+      - KAFKA_BROKERS=broker:29092
+      - KAFKA_TOPIC=raw_transactions
+
+  spark-master:
+    build:
+      context: ./data_processor
+      dockerfile: Dockerfile.spark  # Use the custom Dockerfile
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8080:8080"  # Spark master web UI
+      - "7077:7077"  # Spark master port
+    volumes:
+      - ./data_processor:/opt/spark-apps  # Mount the directory containing fraud_detector.py
+
+  spark-worker-1:
+    build:
+      context: ./data_processor
+      dockerfile: Dockerfile.spark  # Use the custom Dockerfile
+    container_name: spark-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+    depends_on:
+      - spark-master
+    ports:
+      - "8081:8081"  # Spark worker web UI
+
+  spark-worker-2:
+    build:
+      context: ./data_processor
+      dockerfile: Dockerfile.spark  # Use the custom Dockerfile
+    container_name: spark-worker-2
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+    depends_on:
+      - spark-master
+      - spark-worker-1
+      - timescaledb
+      - producer
+    ports:
+      - "8082:8081"  # Spark worker web UI
+    volumes:
+      - ./data_processor:/opt/spark-apps
+    command: ["/bin/bash", "-c", "cd /opt/spark-apps/ && /opt/bitnami/spark/bin/spark-submit --master spark://spark-master:7077 --deploy-mode client --packages org.postgresql:postgresql:42.2.23,org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.2 fraud_detector.py"]
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    environment:
+      POSTGRES_DB: fraud_detection
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./monitoring/init.sql:/docker-entrypoint-initdb.d/init.sql  # Mount the SQL initialization file
+    restart: always
+
+  grafana:
+    build:
+      context: ./monitoring/grafana-dashboard
+      dockerfile: Dockerfile  # Use the custom Dockerfile
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+        - timescaledb
+    volumes:
+        - grafana_storage:/var/lib/grafana
+
+volumes:
+  grafana_storage:
