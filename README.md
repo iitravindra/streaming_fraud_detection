@@ -26,7 +26,7 @@ The system consists of the following components:
 
 ## System Architecture Diagram
 
-[Add your architecture diagram here]
+![Architecture Diagram](Fraud_alert_dig.gif)
 
 ---
 
