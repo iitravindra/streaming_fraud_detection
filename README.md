@@ -52,7 +52,7 @@ cd streaming_fraud_detection
 Use Docker Compose to build and start the containers.
 
 ```bash
-docker-compose up --build
+docker-compose up --build -d
 ```
 
 This command starts all the services defined in the `docker-compose.yml`, including Kafka, Spark, TimescaleDB, and Grafana.
