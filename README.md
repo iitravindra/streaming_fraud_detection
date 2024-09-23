@@ -44,7 +44,7 @@ Before running the project, ensure that you have the following installed:
 
 ### 1. Clone the Repository
 ```bash
-git clone [https://github.com/yourusername/fraud-detection-system.git](https://github.com/iitravindra/streaming_fraud_detection.git)
+git clone https://github.com/iitravindra/streaming_fraud_detection.git
 cd fraud-detection-system
 ```
 
