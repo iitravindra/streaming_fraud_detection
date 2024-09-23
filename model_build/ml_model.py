@@ -11,6 +11,7 @@ data = pd.read_csv('synthetic_fraud_data.csv')
 
 # 3. Preprocess data
 # Handle missing values, encode categorical variables, and scale numerical values
+# (step can be used in future)
 
 # 4. Feature and target separation
 X = data.drop('is_fraud', axis=1)  # Features
@@ -33,7 +34,6 @@ print(classification_report(y_test, y_pred))
 print(f'ROC AUC Score: {roc_auc_score(y_test, y_pred)}')
 
 # Save the trained model to a file
-
 with open('fraud_detection_model.pkl', 'wb') as model_file:
     pickle.dump(model, model_file)
 print("Model saved as fraud_detection_model.pkl")

@@ -102,6 +102,8 @@ account_details_df = spark.read \
     .option("password", get_timescale_connection()['password']) \
     .option("driver", get_timescale_connection()['driver']) \
     .load()
+
+# caching the DF as we are going to use it multiple times
 account_details_df.cache()
 
 #Join `transaction_df` with `account_details_df` to get `account_age`
@@ -111,7 +113,8 @@ joined_df = transaction_df.join(account_details_df, "account_id") \
 # Extract transaction hour from `transaction_time`
 joined_df = joined_df.withColumn("transaction_hour", hour("transaction_time"))
 
-# modif and add later logic to calculate user_transactions_last_24h
+# modify and add later logic to calculate user_transactions_last_24h, Right now it's hardcode and coming from data producers.
+# Ideally user_transactions_last_24h should be calculated by setting a counter of transctions.
 #joined_df = joined_df.withColumn("user_transactions_last_24h", lit(0))
 
 joined_df = joined_df.withColumn("is_fraud", detect_fraud_udf(
@@ -123,8 +126,9 @@ joined_df = joined_df.withColumn("is_fraud", detect_fraud_udf(
 
 # Step 7: Write the result (including `is_fraud`) to the PostgreSQL (TimescaleDB) transactions table
 def write_to_db(batch_df, batch_id):
-    # Drop the 'signup_time' column if it exists
+    # Drop the 'signup_time' column from df.
     cleaned_batch_df = batch_df.drop("signup_time")
+    # write df in the  transactions table in timescale db.
     cleaned_batch_df.write \
         .format("jdbc") \
         .option("url", get_timescale_connection()['url']) \

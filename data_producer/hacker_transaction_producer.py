@@ -18,14 +18,6 @@ class TransactionProducer:
 
     def produce_transactions(self):
         while True:
-            '''transaction = {
-            'transaction_amount': round(np.random.uniform(1, 1000), 2),  # Transaction amount between 1 and 1000
-            'transaction_time': np.random.randint(0, 24),  # Hour of the day
-            'location': random.choice(['USA', 'Canada', 'UK', 'Germany', 'France', 'India', 'China']),
-            'account_age': np.random.randint(1, 3650),  # Account age in days (up to 10 years)
-            'transaction_method': random.choice(['Credit Card', 'Bank Transfer', 'PayPal', 'Cryptocurrency']),
-            'user_transactions_last_24h': np.random.randint(0, 10)  # Number of transactions made by the user in the last 24 hours
-            }'''
             transaction = {
             'account_id': random.choice([11111, 22222]),  # Ensures account_id is either 11111 or 22222
             'transaction_amount': round(np.random.uniform(950, 1500), 2),  # Transaction amount between 950 and 1500

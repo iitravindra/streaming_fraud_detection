@@ -25,5 +25,5 @@ ENV SCRIPT_NAME=${script}
 # Ensure the wait-for-it script is executable
 RUN chmod +x /usr/local/bin/wait-for-it.sh
 
-# Use 'sh -c' to ensure the script argument is expanded
+# Running wait-for-it.sh script first to ensure broker is available and live before script start producing transactions.
 CMD ["sh", "-c", "/usr/local/bin/wait-for-it.sh broker 9092 -- python /app/${SCRIPT_NAME}"]
