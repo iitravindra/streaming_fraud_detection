@@ -157,12 +157,16 @@ services:
         - timescaledb
       volumes:
         - grafana-storage:/var/lib/grafana
-  redis:
-    image: redis:7.4-alpine3.20
-    container_name: redis
+
+  grafana2:
+    build:
+      context: ./monitoring/grafana-dashboard
+      dockerfile: Dockerfile  # Use the custom Dockerfile
+    container_name: grafana2
     ports:
-      - "6379:6379"
-    restart: always
+      - "3001:3000"
+    depends_on:
+        - timescaledb
 
 volumes:
   grafana-storage:

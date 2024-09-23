@@ -7,17 +7,6 @@ from datetime import datetime, timedelta
 
 
 
-def random_date(start, end):
-        """Generate a random datetime between `start` and `end`, including random hours, minutes, and seconds."""
-        delta = end - start
-        random_seconds = random.randint(0, int(delta.total_seconds()))  # Random number of seconds in the range
-        return start + timedelta(seconds=random_seconds)
-
-    # Define the start and end date range for the random transaction_time generation
-start_date = datetime(2023, 1, 1)  # Start date (e.g., Jan 1, 2023)
-end_date = datetime.now()  # End date (current time)
-
-
 class TransactionProducer:
     def __init__(self, brokers, topic):
         self.producer = KafkaProducer(
@@ -40,7 +29,7 @@ class TransactionProducer:
             transaction = {
             'account_id': random.choice([11111, 22222]),  # Ensures account_id is either 11111 or 22222
             'transaction_amount': round(np.random.uniform(950, 1500), 2),  # Transaction amount between 950 and 1500
-            'transaction_time': random_date(start_date, end_date).strftime('%Y-%m-%d %H:%M:%S'),  # Current datetime in a PostgreSQL-friendly format
+            'transaction_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),  # Current datetime in a PostgreSQL-friendly format
             'location': random.choice(['USA', 'Canada', 'UK', 'Germany', 'France', 'India', 'China']),
             'transaction_method': random.choice(['CreditCard', 'BankTransfer', 'PayPal', 'Cryptocurrency']),
             'user_transactions_last_24h': np.random.randint(7, 10)  # Number of transactions made by the user in the last 24 hours
