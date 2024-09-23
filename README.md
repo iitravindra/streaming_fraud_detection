@@ -79,7 +79,9 @@ Login credentials (default):
 - Username: `admin`
 - Password: `admin`
 
+Navigate to Dashboards and click on 'Fraud Detection Dahboard' dashboard. 
 Here, you'll be able to monitor transaction statistics and detect fraud trends over a 10-minute period.
+Note - You may need to refresh the dashboard for the first time. Just refresh the dashboard page for the first time and later it will update after every 5 seconds.
 
 ---
 
